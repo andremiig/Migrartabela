@@ -19,7 +19,7 @@ require 'conexao.php';
             <div class="col-md-12">
                 <div class="card">
                      <div class="card-header">
-                        <h4>Lista de Usuários
+                        <h4>
                             <a href="usuario-create.php" class="btn btn-primary float-end"> Adicionar usuário</a>
                         </h4>
                     </div>
