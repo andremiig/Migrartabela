@@ -1,6 +1,6 @@
 <?php
-session_start();
-require 'conexao.php';
+
+require_once 'conexao.php';
 
 $tabela = 'veiculos';
 $sqlSelect = "SELECT nome, modelo FROM {$tabela}";
@@ -10,13 +10,13 @@ try {
     // A. LEITURA (READ) no Banco de Origem
     $resultadoOrigem = mysqli_query($conexaoDbOrigem, $sqlSelect);
 
-    if (mysqli_num_rows($resultadoDbOrigem) > 0) {
+    if (mysqli_num_rows($resultadoOrigem) > 0) {
 
 
         $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, MYSQLI_ASSOC);
         ///////////
         // Libera o resultado (boa prática, pois os dados estão no array)
-        mysqli_free_result($resultadoDbOrigem);
+        mysqli_free_result($resultadoOrigem);
         
         // B. PREPARAÇÃO para a Escrita
         $sqlInsert = "INSERT INTO {$tabela} (nome, modelo) VALUES (?, ?)";
