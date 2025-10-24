@@ -1,0 +1,2 @@
+# Ignorar o arquivo de configuração local (contém credenciais sensíveis)
+config_local.php
