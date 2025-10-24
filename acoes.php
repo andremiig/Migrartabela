@@ -2,7 +2,6 @@
 session_start();
 require 'conexao.php';
 
-
 $tabela = 'veiculos';
 $sqlSelect = "SELECT nome, modelo FROM {$tabela}";
 $registrosMigrados = 0;
@@ -15,7 +14,7 @@ try {
 
 
         $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, MYSQLI_ASSOC);
-        
+        ///////////
         // Libera o resultado (boa prática, pois os dados estão no array)
         mysqli_free_result($resultadoOrigem);
         
