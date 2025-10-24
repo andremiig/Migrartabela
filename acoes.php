@@ -9,19 +9,19 @@ $registrosMigrados = 0;
 
 try {
     // A. LEITURA (READ) no Banco de Origem
-    $resultadoOrigem = mysqli_query($connOrigem, $sqlSelect);
+    $resultadoOrigem = mysqli_query($conexaoOrigem, $sqlSelect);
 
-    if (mysqli_num_rows($resultadoOrigem) > 0) {
+    if (mysqli_num_rows($resultadoDbOrigem) > 0) {
 
 
-        $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, MYSQLI_ASSOC);
+        $dados_para_migrar = mysqli_fetch_all($resultadoDbOrigem, MYSQLI_ASSOC);
         
         // Libera o resultado (boa prática, pois os dados estão no array)
-        mysqli_free_result($resultadoOrigem);
+        mysqli_free_result($resultadoDbOrigem);
         
         // B. PREPARAÇÃO para a Escrita
         $sqlInsert = "INSERT INTO {$tabela} (nome, modelo) VALUES (?, ?)";
-        $stmtDestino = mysqli_prepare($connDestino, $sqlInsert);
+        $stmtDestino = mysqli_prepare($conexaoDestino, $sqlInsert);
 
         // C. EXECUÇÃO DA ESCRITA (WRITE) no Banco de Destino usando FOREACH
         foreach ($dados_para_migrar as $linha) {
