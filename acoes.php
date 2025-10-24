@@ -3,30 +3,26 @@
 require_once 'conexao.php';
 
 $tabela = 'veiculos';
-$sqlSelect = "SELECT nome, modelo FROM {$tabela}";
+$sqlSelect = "SELECT id, nome, modelo FROM {$tabela}";
 $registrosMigrados = 0;
 
 try {
-    // A. LEITURA (READ) no Banco de Origem
+    //conecta ao banco origem
     $resultadoOrigem = mysqli_query($conexaoDbOrigem, $sqlSelect);
 
     if (mysqli_num_rows($resultadoOrigem) > 0) {
 
-
+       //cria um array com mysqli_fetch_all
         $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, MYSQLI_ASSOC);
-        ///////////
-        // Libera o resultado (boa prática, pois os dados estão no array)
-        mysqli_free_result($resultadoOrigem);
+    
         
-        // B. PREPARAÇÃO para a Escrita
+        // Prepara a inserção
         $sqlInsert = "INSERT INTO {$tabela} (nome, modelo) VALUES (?, ?)";
         $stmtDestino = mysqli_prepare($conexaoDbDestino, $sqlInsert);
 
-        // C. EXECUÇÃO DA ESCRITA (WRITE) no Banco de Destino usando FOREACH
+        // C. Percorre linha por linha com foreach
         foreach ($dados_para_migrar as $linha) {
-            
-            // $linha agora contém o array associativo do registro atual
-            
+                    
             // Faz o "bind" dos valores da linha atual
             // Os tipos (ss) representam 'string' e 'string'
             mysqli_stmt_bind_param($stmtDestino, 'ss', $linha['nome'], $linha['modelo']);
@@ -50,5 +46,8 @@ try {
     echo "\nERRO DURANTE A MIGRAÇÃO: " . $e->getMessage() . "\n";
 }
 
+echo(implode($dados_para_migrar)); 
 // ... (Fechamento das conexões) ...
 ?>
+
+
