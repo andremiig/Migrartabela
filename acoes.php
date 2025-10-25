@@ -24,13 +24,14 @@ try {
         foreach ($dados_para_migrar as $linha) {
                     
             // Faz o "bind" dos valores da linha atual
-            // Os tipos (ss) representam 'string' e 'string'
+            // Os tipos (ss) representam 'string' e 'string', se fosse inteiro seria (i)
             mysqli_stmt_bind_param($stmtDestino, 'ss', $linha['nome'], $linha['modelo']);
             
             // Executa a inserção
             mysqli_stmt_execute($stmtDestino);
 
             $registrosMigrados++;
+           
         }
 
         echo "\nSucesso! {$registrosMigrados} registros migrados para o banco 'DESTINO'.\n";
@@ -45,9 +46,23 @@ try {
 } catch (Exception $e) {
     echo "\nERRO DURANTE A MIGRAÇÃO: " . $e->getMessage() . "\n";
 }
+$id = array_column($dados_para_migrar, 'id');
+$nomes = array_column($dados_para_migrar, 'nome');
+$modelos = array_column($dados_para_migrar, 'modelo');
 
-echo(implode($dados_para_migrar)); 
-// ... (Fechamento das conexões) ...
+print_r($id);
+print_r($nomes);
+print_r($modelos);
+
+// print_r($dados_para_migrar); 
+
 ?>
 
+// Aí pra você ir controlando se está dando certo você pode fazer uma verificação se a query de insert deu certo. Tipo assim: 
 
+/* $resultInsert = mysql...
+
+if ($resultInsert) {
+  echo "Registro migrado com sucesso => " . $Id . ' - ' . $Marca;
+} 
+*/
