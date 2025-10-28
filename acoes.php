@@ -1,6 +1,8 @@
 <?php
-
 require_once 'conexao.php';
+if (file_exists('config_local.php')) {
+    require_once 'config_local.php';
+}
 
 $tabela = 'veiculos';
 $sqlSelect = "SELECT id, nome, modelo FROM {$tabela}";
@@ -13,7 +15,7 @@ try {
     if (mysqli_num_rows($resultadoOrigem) > 0) {
 
        //cria um array com mysqli_fetch_all
-        $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, MYSQLI_ASSOC);
+        $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, mode: MYSQLI_ASSOC);
     
         
         // Prepara a inserção

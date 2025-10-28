@@ -7,6 +7,7 @@ if (file_exists('config_local.php')) {
 } else {
     // 2. CONFIGURAÇÕES DE FALLBACK/PADRÃO SE O ARQUIVO LOCAL NÃO EXISTIR.
     // Use credenciais seguras ou de produção, dependendo do seu fluxo de deploy.
+//conexao de origem
 
 define('HOST_ORIGEM', '127.0.0.1');
 define('USUARIO_ORIGEM','root');
