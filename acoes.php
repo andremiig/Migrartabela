@@ -1,70 +1,90 @@
 <?php
-require_once 'conexao.php';
+
 if (file_exists('config_local.php')) {
     require_once 'config_local.php';
+} else {
+    require_once 'conexao.php';
 }
 
-$tabela = 'veiculos';
-$sqlSelect = "SELECT id, nome, modelo FROM {$tabela}";
-$registrosMigrados = 0;
+echo "--- INÍCIO DA MIGRAÇÃO ---\n";
 
-try {
-    //conecta ao banco origem
-    $resultadoOrigem = mysqli_query($conexaoDbOrigem, $sqlSelect);
+// Garante que a leitura da origem é ordenada
+$sqlSelect = "SELECT * FROM veiculos ORDER BY id ASC"; 
+$resultadoOrigem = $conexaoDbOrigem->query($sqlSelect);
 
-    if (mysqli_num_rows($resultadoOrigem) > 0) {
+// Verifica falha no SELECT e interrompe o script
+if ($resultadoOrigem === false) {
+    die("\nERRO FATAL NA LEITURA: " . mysqli_error($conexaoDbOrigem) . "\n");
+}
 
-       //cria um array com mysqli_fetch_all
-        $dados_para_migrar = mysqli_fetch_all($resultadoOrigem, mode: MYSQLI_ASSOC);
-    
+$tabela_destino = 'tabelaveiculos2.veiculos'; 
+$registrosProcessados = 0;
+$todasAsLinhas = []; 
+
+if (mysqli_num_rows($resultadoOrigem) > 0) {
+
+    echo "Tabela de Destino: {$tabela_destino}<br>"; 
+
+    while ($linha = $resultadoOrigem->fetch_assoc()) {
         
-        // Prepara a inserção
-        $sqlInsert = "INSERT INTO {$tabela} (nome, modelo) VALUES (?, ?)";
-        $stmtDestino = mysqli_prepare($conexaoDbDestino, $sqlInsert);
+        $id = $linha['id']; 
+        $nome = $linha['nome'];
+        $modelo = $linha['modelo'];
+        
+        // Adiciona ao array de relatório
+        $todasAsLinhas[] = $linha; 
+        
+        // 1. SEGURANÇA: Prepara as strings (MANTIDO)
+        $nome_seguro = mysqli_real_escape_string($conexaoDbDestino, $nome);
+        $modelo_seguro = mysqli_real_escape_string($conexaoDbDestino, $modelo);
 
-        // C. Percorre linha por linha com foreach
-        foreach ($dados_para_migrar as $linha) {
-                    
-            // Faz o "bind" dos valores da linha atual
-            // Os tipos (ss) representam 'string' e 'string', se fosse inteiro seria (i)
-            mysqli_stmt_bind_param($stmtDestino, 'ss', $linha['nome'], $linha['modelo']);
-            
-            // Executa a inserção
-            mysqli_stmt_execute($stmtDestino);
+        // 2. SOLUÇÃO CHAVE: Usando ON DUPLICATE KEY UPDATE
+        $sqlInsertUpdate = "
+            INSERT INTO {$tabela_destino} (id, nome, modelo) 
+            VALUES (
+                {$id},             
+                '{$nome_seguro}', 
+                '{$modelo_seguro}'
+            )
+            ON DUPLICATE KEY UPDATE
+                nome = VALUES(nome),
+                modelo = VALUES(modelo)";
 
-            $registrosMigrados++;
-           
+        echo "Processando ID: {$id}.<br>";
+
+        // 3. Executa a inserção/atualização
+        if (mysqli_query($conexaoDbDestino, $sqlInsertUpdate)) {
+            $registrosProcessados++;
+            echo "RESULTADO: SUCESSO. (Linhas afetadas: " . mysqli_affected_rows($conexaoDbDestino) . ")<br>"; 
         }
-
-        echo "\nSucesso! {$registrosMigrados} registros migrados para o banco 'DESTINO'.\n";
-
-        // Fecha o statement preparado
-        mysqli_stmt_close($stmtDestino);
-
-    } else {
-        echo "\nO Banco de Origem não contém dados na tabela '{$tabela}'.\n";
-    }
-
-} catch (Exception $e) {
-    echo "\nERRO DURANTE A MIGRAÇÃO: " . $e->getMessage() . "\n";
+        else {
+            // Se o INSERT falhar, o script é interrompido aqui (die/exit)
+            die("\nERRO FATAL DURANTE A MIGRAÇÃO (ID {$id}): " . mysqli_error($conexaoDbDestino) . "<br>");
+        }
+    } // Fim do while
+} else {
+    echo "AVISO: Nenhuma linha encontrada no banco de origem.<br>";
 }
-$id = array_column($dados_para_migrar, 'id');
-$nomes = array_column($dados_para_migrar, 'nome');
-$modelos = array_column($dados_para_migrar, 'modelo');
 
-print_r($id);
-print_r($nomes);
-print_r($modelos);
 
-// print_r($dados_para_migrar); 
+mysqli_close($conexaoDbOrigem);
+mysqli_close($conexaoDbDestino);
+
+echo "\n--- FIM DA MIGRAÇÃO ---<br>";
+echo "Total de registros processados (inseridos ou atualizados): " . $registrosProcessados . "<br>";
+
+// Exibição dos dados lidos
+$id_array = array_column($todasAsLinhas, 'id');
+$nomes_array = array_column($todasAsLinhas, 'nome');
+$modelos_array = array_column($todasAsLinhas, 'modelo');
+
+echo '<pre>';
+echo "IDs: ";
+print_r($id_array);
+echo "Nomes: ";
+print_r($nomes_array); 
+echo "Modelos: ";
+print_r($modelos_array);
+echo '</pre>';
 
 ?>
-
-// Aí pra você ir controlando se está dando certo você pode fazer uma verificação se a query de insert deu certo. Tipo assim: 
-
-/* $resultInsert = mysql...
-
-if ($resultInsert) {
-  echo "Registro migrado com sucesso => " . $Id . ' - ' . $Marca;
-} 
-*/
