@@ -6,15 +6,11 @@ if (file_exists('config_local.php')) {
     require_once 'conexao.php';
 }
 
-echo "--- INÍCIO DA MIGRAÇÃO ---\n";
-
-// Garante que a leitura da origem é ordenada
-$sqlSelect = "SELECT * FROM veiculos ORDER BY id ASC"; 
+$sqlSelect = "SELECT * FROM veiculos"; 
 $resultadoOrigem = $conexaoDbOrigem->query($sqlSelect);
 
-// Verifica falha no SELECT e interrompe o script
-if ($resultadoOrigem === false) {
-    die("\nERRO FATAL NA LEITURA: " . mysqli_error($conexaoDbOrigem) . "\n");
+if (!$resultadoOrigem) {
+    echo "ERRO FATAL NA LEITURA: " . mysqli_error($conexaoDbOrigem) . ";";
 }
 
 $tabela_destino = 'tabelaveiculos2.veiculos'; 
@@ -23,55 +19,40 @@ $todasAsLinhas = [];
 
 if (mysqli_num_rows($resultadoOrigem) > 0) {
 
-    echo "Tabela de Destino: {$tabela_destino}<br>"; 
-
     while ($linha = $resultadoOrigem->fetch_assoc()) {
         
-        $id = $linha['id']; 
+        $id_origem = $linha['id']; 
         $nome = $linha['nome'];
         $modelo = $linha['modelo'];
         
-        // Adiciona ao array de relatório
         $todasAsLinhas[] = $linha; 
         
-        // 1. SEGURANÇA: Prepara as strings (MANTIDO)
-        $nome_seguro = mysqli_real_escape_string($conexaoDbDestino, $nome);
-        $modelo_seguro = mysqli_real_escape_string($conexaoDbDestino, $modelo);
-
-        // 2. SOLUÇÃO CHAVE: Usando ON DUPLICATE KEY UPDATE
-        $sqlInsertUpdate = "
-            INSERT INTO {$tabela_destino} (id, nome, modelo) 
+   
+        $sqlInsert = "
+            INSERT INTO {$tabela_destino} (nome, modelo, id_origem) 
             VALUES (
-                {$id},             
-                '{$nome_seguro}', 
-                '{$modelo_seguro}'
-            )
-            ON DUPLICATE KEY UPDATE
-                nome = VALUES(nome),
-                modelo = VALUES(modelo)";
+                '{$nome}', 
+                '{$modelo}',
+                {$id_origem}
+            )";
 
-        echo "Processando ID: {$id}.<br>";
-
-        // 3. Executa a inserção/atualização
-        if (mysqli_query($conexaoDbDestino, $sqlInsertUpdate)) {
+        if (mysqli_query($conexaoDbDestino, $sqlInsert)) {
             $registrosProcessados++;
-            echo "RESULTADO: SUCESSO. (Linhas afetadas: " . mysqli_affected_rows($conexaoDbDestino) . ")<br>"; 
+            echo "RESULTADO: SUCESSO. Linhas afetadas: " . mysqli_affected_rows($conexaoDbDestino) . ";";
         }
         else {
-            // Se o INSERT falhar, o script é interrompido aqui (die/exit)
-            die("\nERRO FATAL DURANTE A MIGRAÇÃO (ID {$id}): " . mysqli_error($conexaoDbDestino) . "<br>");
+           
+            echo "ERRO FATAL DURANTE A MIGRAÇÃO (ID Original {$id_origem}): " . mysqli_error($conexaoDbDestino) . ");";
         }
-    } // Fim do while
+    } 
 } else {
     echo "AVISO: Nenhuma linha encontrada no banco de origem.<br>";
 }
 
-
 mysqli_close($conexaoDbOrigem);
 mysqli_close($conexaoDbDestino);
 
-echo "\n--- FIM DA MIGRAÇÃO ---<br>";
-echo "Total de registros processados (inseridos ou atualizados): " . $registrosProcessados . "<br>";
+echo "Total de registros processados (inseridos): " . $registrosProcessados . "<br>";
 
 // Exibição dos dados lidos
 $id_array = array_column($todasAsLinhas, 'id');
@@ -79,7 +60,7 @@ $nomes_array = array_column($todasAsLinhas, 'nome');
 $modelos_array = array_column($todasAsLinhas, 'modelo');
 
 echo '<pre>';
-echo "IDs: ";
+echo "IDs Originais: ";
 print_r($id_array);
 echo "Nomes: ";
 print_r($nomes_array); 
